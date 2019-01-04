@@ -15,6 +15,7 @@ services:
   web:
     container_name : ffxivbot-web
     build: .
+    image: 'bluefissure/ffxivbot:latest'
     volumes:
       - .:/FFXIVBOT
     depends_on:
@@ -25,19 +26,6 @@ services:
       - 8000:8002
     working_dir: /FFXIVBOT
     command: daphne FFXIVBOT.asgi:application -b 0.0.0.0 -p 8002
-  # nginx:
-  #   image: nginx
-  #   restart: always
-  #   container_name : sspanel-nginx
-  #   volumes:
-  #     - ./configs/nginx/:/etc/nginx/conf.d
-  #     - static:/src/FFXIVBOT/static
-  #   ports:
-  #     - 80:80
-  #   depends_on:
-  #     - web
-  #   networks:
-  #     - ffxivbot_network
   redis:
     container_name : ffxivbot-redis
     image: "redis:alpine"

@@ -93,6 +93,8 @@ class WSConsumer(AsyncWebsocketConsumer):
             self.bot.event_time = int(time.time())
             self.bot.save(update_fields=["event_time"])
             self.config = json.load(open(CONFIG_PATH,encoding="utf-8"))
+            for (k, v) in self.config.items():
+                self.config[k] = os.environ.get(k, v)
             already_reply = False
             try:
                 receive = json.loads(text_data)
@@ -106,7 +108,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                     except QQBot.DoesNotExist as e:
                         LOGGER.error("bot {} does not exsit.".format(self_id))
                         raise e
-                    config = json.load(open(CONFIG_PATH,encoding="utf-8"))
+                    config = self.config
                     already_reply = False
 
                     if(receive["post_type"] == "meta_event" and receive["meta_event_type"] == "heartbeat"):
