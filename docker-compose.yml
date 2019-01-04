@@ -24,7 +24,7 @@ services:
     ports:
       - 8000:8002
     working_dir: /FFXIVBOT
-    command: daphne FFXIVBOT.asgi:application -p 8002
+    command: daphne FFXIVBOT.asgi:application -b 0.0.0.0 -p 8002
   # nginx:
   #   image: nginx
   #   restart: always
@@ -38,26 +38,10 @@ services:
   #     - web
   #   networks:
   #     - ffxivbot_network
-  # redis:
-  #   image: "redis:alpine"
-  #   networks:
-  #     - ffxivbot_network
-  # rabbitmq:
-  #   image: "rabbitmq:3-management"
-  #   environment:
-  #     RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
-  #     RABBITMQ_DEFAULT_USER: "rabbitmq"
-  #     RABBITMQ_DEFAULT_PASS: "rabbitmq"
-  #     RABBITMQ_DEFAULT_VHOST: "/"
-  #   ports:
-  #     - "15672:15672"
-  #     - "5672:5672"
-  #   labels:
-  #     NAME: "rabbitmq"
-  #   volumes:
-  #     - "./enabled_plugins:/etc/rabbitmq/enabled_plugins"
-  #   networks:
-  #     - ffxivbot_network
+  redis:
+    image: "redis:alpine"
+    networks:
+      - ffxivbot_network
 networks:
   ffxivbot_network:
 volumes:
