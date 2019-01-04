@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.6
+    container_name : ffxivbot-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: FFXIV_DEV
+    volumes:
+      - ./docker/mysql-data:/var/lib/mysql
+    networks:
+      - ffxivbot_network
+  web:
+    container_name : ffxivbot-web
+    build: .
+    volumes:
+      - .:/FFXIVBOT
+    depends_on:
+      - db
+    networks:
+      - ffxivbot_network
+    ports:
+      - 8000:8002
+    working_dir: /FFXIVBOT
+    command: daphne FFXIVBOT.asgi:application -p 8002
+  # nginx:
+  #   image: nginx
+  #   restart: always
+  #   container_name : sspanel-nginx
+  #   volumes:
+  #     - ./configs/nginx/:/etc/nginx/conf.d
+  #     - static:/src/FFXIVBOT/static
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - web
+  #   networks:
+  #     - ffxivbot_network
+  # redis:
+  #   image: "redis:alpine"
+  #   networks:
+  #     - ffxivbot_network
+  # rabbitmq:
+  #   image: "rabbitmq:3-management"
+  #   environment:
+  #     RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+  #     RABBITMQ_DEFAULT_USER: "rabbitmq"
+  #     RABBITMQ_DEFAULT_PASS: "rabbitmq"
+  #     RABBITMQ_DEFAULT_VHOST: "/"
+  #   ports:
+  #     - "15672:15672"
+  #     - "5672:5672"
+  #   labels:
+  #     NAME: "rabbitmq"
+  #   volumes:
+  #     - "./enabled_plugins:/etc/rabbitmq/enabled_plugins"
+  #   networks:
+  #     - ffxivbot_network
+networks:
+  ffxivbot_network:
+volumes:
+  static:
+  mysql-data:

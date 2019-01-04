@@ -103,9 +103,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'FFXIV_DEV',
-        'USER': 'FFXIV_DEV',
-        'PASSWORD': 'PASSWORD',
-        'HOST': '127.0.0.1',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': 'db',
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
     }
