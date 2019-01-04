@@ -60,44 +60,8 @@ docker-compose run web python manage.py createsuperuser  #创建管理员
 
 ## 2. 使用构建好的镜像
 
-将如下内容保存为`docker-compose.yml`
-
-```yml
-version: '3'
-
-services:
-  db:
-    image: mysql:5.6
-    container_name : ffxivbot-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: FFXIV_DEV
-    volumes:
-      - ./docker/mysql-data:/var/lib/mysql
-    networks:
-      - ffxivbot_network
-  web:
-    container_name : ffxivbot-web
-    image: 'bluefissure/ffxivbot:latest'
-    depends_on:
-      - db
-      - redis
-    networks:
-      - ffxivbot_network
-    ports:
-      - 8000:8002
-    restart: on-failure
-    command: daphne FFXIVBOT.asgi:application -b 0.0.0.0 -p 8002
-  redis:
-    container_name : ffxivbot-redis
-    image: "redis:alpine"
-    networks:
-      - ffxivbot_network
-networks:
-  ffxivbot_network:
-volumes:
-  mysql-data:
+```bash
+wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/docker-compose.yml
+docker-compose up
 ```
 
-然后直接`docker-compose up`
