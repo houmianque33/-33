@@ -39,6 +39,7 @@ services:
   #   networks:
   #     - ffxivbot_network
   redis:
+    container_name : ffxivbot-redis
     image: "redis:alpine"
     networks:
       - ffxivbot_network
