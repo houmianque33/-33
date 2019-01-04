@@ -27,38 +27,10 @@ import logging
 from bs4 import BeautifulSoup
 import urllib
 import gc
-import pika
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
 CONFIG_PATH = os.environ.get("FFXIVBOT_CONFIG", "/FFXIVBOT/ffxivbot/config.json")
 
 LOGGER = logging.getLogger(__name__)
-
-class PikaPublisher():
-    def __init__(self, username="guest", password="guest", queue="ffxivbot"):
-        self.credentials = pika.PlainCredentials(username, password)
-        self.queue = queue
-        self.parameters =  pika.ConnectionParameters('127.0.0.1',5672,'/',self.credentials, heartbeat=0)
-        self.connection = pika.BlockingConnection(self.parameters)
-        self.channel = self.connection.channel()
-        self.priority_queue = {"x-max-priority":20,"x-message-ttl":60000}
-        self.channel.queue_declare(queue=self.queue, arguments=self.priority_queue)
-        
-
-    def send(self, body="null", priority=1):
-        if not self.connection.is_open:
-            self.connection = pika.BlockingConnection(self.parameters)
-            self.channel = self.connection.channel()
-            self.priority_queue = {"x-max-priority":20,"x-message-ttl":60000}
-            self.channel.queue_declare(queue=self.queue, arguments=self.priority_queue)
-        self.channel.basic_publish(exchange='',
-                      routing_key=self.queue,
-                      body=body,
-                      properties=pika.BasicProperties(content_type="text/plain",priority=priority))
-        # self.connection.close()
-
-    def exit(self):
-        if self.connection.is_open:
-            self.connection.close()
 
 
 class WSConsumer(AsyncWebsocketConsumer):
@@ -85,7 +57,6 @@ class WSConsumer(AsyncWebsocketConsumer):
             LOGGER.debug("New Universal Connection:%s"%(self.channel_name))
             self.bot.save(update_fields=["event_time","api_channel_name","event_channel_name"])
             LOGGER.debug("Universal Channel connect from {} by channel:{}".format(self.bot.user_id,self.bot.api_channel_name))
-            self.pub = PikaPublisher()
             await self.accept()
         except QQBot.DoesNotExist:
             LOGGER.error("%s:%s:API:AUTH_FAIL"%(ws_self_id, ws_access_token))
@@ -128,50 +99,207 @@ class WSConsumer(AsyncWebsocketConsumer):
                 if(receive["post_type"] == "meta_event" and receive["meta_event_type"] == "heartbeat"):
                     LOGGER.info("bot:{} Event heartbeat at time:{}".format(self.bot.user_id, int(time.time())))
                     # await self.call_api("get_status",{},"get_status:{}".format(self.bot_user_id))
-                self_id = receive["self_id"]
-                if("message" in receive.keys()):
-                    if int(self_id)==3299510002:
-                        LOGGER.info("receving prototype message:{}".format(receive["message"]))
-                    priority = 1
+                try:
+                    self_id = receive["self_id"]
                     try:
-                        if len(json.loads(self.bot.group_list))>=10:
-                            priority += 1
-                        version_info = json.loads(self.bot.version_info)
-                        coolq_edition = version_info["coolq_edition"] if version_info and "coolq_edition" in version_info.keys() else ""
-                        if "Pro" in coolq_edition:
-                            priority += 1
-                    except:
-                        traceback.print_exc()
-                    if (receive["message"].find("/")==0 or receive["message"].find("\\")==0):
-                        priority += 1
-                        # command_stat = json.loads(self.bot.command_stat)
-                        # if "log" not in command_stat.keys():
-                        #     command_stat["log"] = []
-                        # command_stat["log"].append({
-                        #     "command":receive["message"].strip().split(" ")[0],
-                        #     "user":receive["user_id"],
-                        #     "time":int(time.time())
-                        #     })
-                        # self.bot.command_stat = json.dumps(command_stat)
-                        self.bot.save(update_fields=["event_time","command_stat"])
-                        self.pub.send(text_data, priority)
-                    else:
-                        push_to_mq = False
-                        if "group_id" in receive.keys():
+                        bot = QQBot.objects.get(user_id=self_id)
+                    except QQBot.DoesNotExist as e:
+                        LOGGER.error("bot {} does not exsit.".format(self_id))
+                        raise e
+                    config = json.load(open(CONFIG_PATH,encoding="utf-8"))
+                    already_reply = False
+
+                    if(receive["post_type"] == "meta_event" and receive["meta_event_type"] == "heartbeat"):
+                        LOGGER.debug("bot:{} Event heartbeat at time:{}".format(self_id, int(time.time())))
+                        await self.call_api(bot, "get_status",{},"get_status:{}".format(self_id))
+
+                    if (receive["post_type"] == "message"):
+                        # LOGGER.info('%s Handling message %s', os.getpid(), receive["message"])
+                        # Self-ban in group
+                        user_id = receive["user_id"]
+                        if(QQBot.objects.filter(user_id=user_id).count()>0):
+                            raise Exception("{} reply from another bot:{}".format(receive["self_id"], user_id))
+                            # LOGGER.error("{} reply from another bot:{}".format(receive["self_id"], user_id))
+                            # self.acknowledge_message(basic_deliver.delivery_tag)
+                            # return
+
+                        for (alter_command, command) in handlers.alter_commands.items():
+                            if(receive["message"].find(alter_command)==0):
+                                receive["message"] = receive["message"].replace(alter_command, command, 1)
+                                
+                        group_id = None
+                        group = None
+                        group_created = False
+                        #Group Control Func
+                        receive["message"] = receive["message"].replace('\\', '/', 1)
+                        if (receive["message_type"]=="group"):
                             group_id = receive["group_id"]
                             (group, group_created) = QQGroup.objects.get_or_create(group_id=group_id)
-                            push_to_mq = "[CQ:at,qq={}]".format(self_id) in receive["message"] or \
-                                            ((group.repeat_ban>0) or (group.repeat_length>1 and group.repeat_prob>0)) 
-                        if push_to_mq:
-                            self.pub.send(text_data, priority)
+                            if(int(time.time()) < group.ban_till):
+                                raise Exception("{} banned by group:{}".format(self_id, group_id))
+                                # LOGGER.info("{} banned by group:{}".format(self_id, group_id))
+                                # self.acknowledge_message(basic_deliver.delivery_tag)
+                                # return
+                            group_commands = json.loads(group.commands)
+
+                            try:
+                                member_list = json.loads(group.member_list)
+                                if group_created or not member_list:
+                                    await self.update_group_member_list(bot, group_id)
+                            except:
+                                member_list = []
+                                
+                            
+                            if (receive["message"].find('/group_help')==0):
+                                msg =  "" if member_list else "本群成员信息获取失败，请尝试重启酷Q并使用/update_group刷新群成员信息"
+                                for (k, v) in handlers.group_commands.items():
+                                    msg += "{} : {}\n".format(k,v)
+                                msg = msg.strip()
+                                await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+                            else:
+                                if(receive["message"].find('/update_group')==0):
+                                    await self.update_group_member_list(bot, group_id)
+                                #get sender's user_info
+
+                                user_info = receive["sender"] if "sender" in receive.keys() else None
+                                user_info = user_info if user_info and "role" in user_info.keys() else None
+                                if member_list and not user_info:
+                                    for item in member_list:
+                                        if(int(item["user_id"])==int(user_id)):
+                                            user_info = item
+                                            break
+                                if not user_info:
+                                    raise Exception("No user info for user_id:{} in group:{}".format(user_id, group_id))
+
+                                group_command_keys = sorted(handlers.group_commands.keys())
+                                group_command_keys.reverse()
+                                for command_key in group_command_keys:
+                                    if(receive["message"].find(command_key)==0):
+                                        if receive["message_type"]=="group" and group_commands:
+                                            if command_key in group_commands.keys() and group_commands[command_key]=="disable":
+                                                continue
+                                        if not group.registered and command_key!="/group":
+                                            msg = "本群%s未在数据库注册，请群主使用/register_group命令注册"%(group_id)
+                                            await self.send_message(bot, "group", group_id, msg)
+                                            break
+                                        else:
+                                            handle_method = getattr(handlers,"QQGroupCommand_{}".format(command_key.replace("/","",1)))
+                                            action_list = handle_method(receive = receive, 
+                                                                        global_config = config, 
+                                                                        bot = bot, 
+                                                                        user_info = user_info, 
+                                                                        member_list = member_list, 
+                                                                        group = group,
+                                                                        commands = handlers.commands,
+                                                                        group_commands = handlers.group_commands,
+                                                                        alter_commands = handlers.alter_commands,
+                                                                        )
+                                            for action in action_list:
+                                                await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                                            already_reply = True
+                                            break
+
+                            if not already_reply:
+                                action_list = handlers.QQGroupChat(receive = receive, 
+                                                                    global_config = config, 
+                                                                    bot = bot, 
+                                                                    user_info = user_info, 
+                                                                    member_list = member_list, 
+                                                                    group = group,
+                                                                    commands = handlers.commands,
+                                                                    alter_commands = handlers.alter_commands,
+                                                                    )
+                                for action in action_list:
+                                    await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                    
 
 
-                    # print("publishing to mq: {}".format(text_data))
-                    return
-                
-                if(receive["post_type"] == "request" or receive["post_type"] == "event"):
-                    priority = 1
-                    self.pub.send(text_data, priority)
+
+                        
+                        
+
+                        if (receive["message"].find('/help')==0):
+                            msg =  ""
+                            for (k, v) in handlers.commands.items():
+                                msg += "{} : {}\n".format(k,v)
+                            msg += "具体介绍详见Wiki使用手册: {}\n".format("https://github.com/Bluefissure/FFXIVBOT/wiki/")
+                            msg = msg.strip()
+                            await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+
+                        if (receive["message"].find('/ping')==0):
+                            msg =  ""
+                            if "detail" in receive["message"]:
+                                msg += "[CQ:at,qq={}]\ncoolq->server: {:.2f}s\nserver->rabbitmq: {:.2f}s".format(
+                                    receive["user_id"], 
+                                    receive["consumer_time"]-receive["time"], 
+                                    time.time()-receive["consumer_time"])
+                            else:
+                                msg += "[CQ:at,qq={}] {:.2f}s".format(receive["user_id"], time.time()-receive["time"])
+                            msg = msg.strip()
+                            LOGGER.debug("{} calling command: {}".format(user_id, "/ping"))
+                            await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+
+                        
+
+                        command_keys = sorted(handlers.commands.keys())
+                        command_keys.reverse()
+                        for command_key in command_keys:
+                            if(receive["message"].find(command_key)==0):
+                                if receive["message_type"]=="group" and group_commands:
+                                    if command_key in group_commands.keys() and group_commands[command_key]=="disable":
+                                        continue
+                                LOGGER.debug("{} calling command: {}".format(user_id, command_key))
+                                handle_method = getattr(handlers,"QQCommand_{}".format(command_key.replace("/","",1)))
+                                action_list = handle_method(receive=receive, global_config=config, bot=bot)
+                                # if(len(json.loads(bot.disconnections))>100):
+                                #     action_list = self.intercept_action(action_list)
+                                for action in action_list:
+                                    await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                                    already_reply = True
+                                break
+
+                        
+                    CONFIG_GROUP_ID = config["CONFIG_GROUP_ID"]
+                    if (receive["post_type"] == "request"):
+                        if (receive["request_type"] == "friend"):   #Add Friend
+                            qq = receive["user_id"]
+                            flag = receive["flag"]
+                            if(bot.auto_accept_friend):
+                                reply_data = {"flag":flag, "approve": True}
+                                await self.call_api(bot, "set_friend_add_request",reply_data)
+                        if (receive["request_type"] == "group" and receive["sub_type"] == "invite"):    #Invite Group
+                            flag = receive["flag"]
+                            if(bot.auto_accept_invite):
+                                reply_data = {"flag":flag, "sub_type":"invite", "approve": True}
+                                await self.call_api(bot, "set_group_add_request",reply_data)
+                        if (receive["request_type"] == "group" and receive["sub_type"] == "add" and str(receive["group_id"])==CONFIG_GROUP_ID):    #Add Group
+                            flag = receive["flag"]
+                            user_id = receive["user_id"]
+                            qs = QQBot.objects.filter(owner_id=user_id)
+                            if(qs.count()>0):
+                                reply_data = {"flag":flag, "sub_type":"add", "approve": True}
+                                await self.call_api(bot, "set_group_add_request",reply_data)
+                                reply_data = {"group_id":CONFIG_GROUP_ID, "user_id":user_id, "special_title":"饲养员"}
+                                await self.call_api(bot, "set_group_special_title", reply_data)
+                    if (receive["post_type"] == "event"):
+                        if (receive["event"] == "group_increase"):
+                            group_id = receive["group_id"]
+                            user_id = receive["user_id"]
+                            try:
+                                group = QQGroup.objects.get(group_id=group_id)
+                                msg = group.welcome_msg.strip()
+                                if(msg!=""):
+                                    msg = "[CQ:at,qq=%s]"%(user_id)+msg
+                                    await self.send_message(bot, "group", group_id, msg)
+                            except:
+                                traceback.print_exc()
+                    # print(" [x] Received %r" % body)
+                except Exception as e:
+                    LOGGER.error(e)
+                except:
+                    traceback.print_exc()
+
+
 
             except Exception as e:
                 traceback.print_exc() 
