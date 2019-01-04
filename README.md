@@ -1,51 +1,55 @@
-# FFXIVBOT
+# FFXIVBOT Docker
 
-[![Build Status](https://travis-ci.org/Bluefissure/FFXIVBOT.svg?branch=master)](https://travis-ci.org/Bluefissure/FFXIVBOT)
-[![license](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/Bluefissure/FFXIVBOT/blob/master/LICENSE)
+## 安装Docker
 
-A QQ bot of FFXIV
+### docker-ce
 
-## Install
+```bash
+curl -sSL https://get.docker.com/ | sh 
+```
 
-Please read [wiki](https://github.com/Bluefissure/FFXIVBOT/wiki/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3) for more details.
+如果不是root安装，安装过程可能要输入root密码
 
-- python 3.5.3+
-- redis-server 4.0+
-- django, channels and so on (see [requeirements.txt](https://github.com/Bluefissure/FFXIVBOT/blob/master/requirements.txt) for details)
-- [coolq-wine(docker)](https://hub.docker.com/r/coolq/wine-coolq/) for back-end bot
-- [coolq-http-api](https://github.com/richardchien/coolq-http-api) for web communication
-- [adminLTE](https://github.com/almasaeed2010/AdminLTE) for the front-end
+如果`container.io`的安装有问题，可以通过先`sudo apt-get remove docker-ce`，再`sudo apt-get remove runc`，再重试上述命令尝试解决
 
-## Use
+### docker-compose
 
-Please read [wiki](https://github.com/Bluefissure/FFXIVBOT/wiki/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3) for more details.
+```bash
+sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+```
 
-- /cat : require an image of cat (crawled from [pexels](https://www.pexels.com/search/cat))
-- /search $item : search $item in [FFXIVWIKI](https://ff14.huijiwiki.com/)
-- /anime $image : search the animation of $image ([whatanime](https://whatanime.ga/) API token required)
-- /random $num : require $num true random numbers  ([random.org](https://www.random.org/) API token required)
-- /gif : generate an shadiao gif via [sorry.xuty.tk](https://sorry.xuty.tk/) (/gif help : get help)
-- /dps : get the dps rank from fflogs
+## 拉取代码
 
-## Demo
+```bash
+git clone -b docker https://github.com/Bluefissure/FFXIVBOT.git && cd FFXIVBOT
+wget https://github.com/almasaeed2010/AdminLTE/archive/v2.4.5.tar.gz && tar zxf v2.4.5.tar.gz && rm v2.4.5.tar.gz
+mv AdminLTE-2.4.5/bower_components static/
+mv AdminLTE-2.4.5/dist static/
+mv AdminLTE-2.4.5/plugins static/
+rm -r AdminLTE-2.4.5/
+```
 
-[Configure site](http://111.231.102.248/tata)
+## 环境创建
 
-![/cat](https://i.loli.net/2018/04/11/5acd9cd833831.png)
-![/search](https://i.loli.net/2018/04/11/5acd9c2eef267.png)
-![/anime](https://i.loli.net/2018/04/11/5acd9c2f2ceea.png)
-![/random](https://i.loli.net/2018/04/11/5acd9c2f0da51.png)
+```bash
+docker-compose build --no-cache
+```
 
-## Tips
+创建后运行container：
 
-- This project is currently using [django-channels](https://github.com/django/channels) to support reverse websocket of http-api, if you prefer http, see [previous version](https://github.com/Bluefissure/FFXIVBOT/tree/be91c3fb3910479733db937f5f7f263dcef331a7)
+```bash
+docker-compose up
+```
 
-# FFXIV Quest Visualization
+## 数据同步
 
-A Visualization of FFXIV Quest
+```bash
+docker-compose run web python manage.py makemigrations
+docker-compose run web python manage.py migrate
+docker-compose run web python manage.py collectstatic
+docker-compose run web python manage.py createsuperuser  #创建管理员
+```
 
-## Demo
-
-[Demo site](http://111.231.102.248/quest)
-
-![](https://i.loli.net/2018/09/14/5b9b2dcabfc95.jpg)
+访问IP:8000即可访问网页了
