@@ -8,3 +8,5 @@ ADD  requirements.txt /FFXIVBOT/
 RUN pip install -r requirements.txt
 ADD . /FFXIVBOT/
 EXPOSE 8002
+CMD ["bash","entrypoint.sh"]
+

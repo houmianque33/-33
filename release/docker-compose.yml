@@ -18,15 +18,25 @@ services:
     depends_on:
       - db
       - redis
+      - migration
     networks:
       - ffxivbot_network
     ports:
       - 8000:8002
-    restart: on-failure
+    restart: always
     command: daphne FFXIVBOT.asgi:application -b 0.0.0.0 -p 8002
   redis:
     container_name : ffxivbot-redis
     image: "redis:alpine"
+    networks:
+      - ffxivbot_network
+  migration:
+    container_name : ffxivbot-web-migration
+    image: 'bluefissure/ffxivbot:latest'
+    command: bash -c "python manage.py migrate && python manage.py collectstatic" 
+    restart: on-failure
+    depends_on:
+      - db
     networks:
       - ffxivbot_network
 networks:
