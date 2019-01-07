@@ -6,7 +6,6 @@ ADD  requirements.txt /FFXIVBOT/
 # RUN wget https://tuna.moe/oh-my-tuna/oh-my-tuna.py  # Remove this line if your server is located outside of mainland China
 # RUN python oh-my-tuna.py  # Remove this line if your server is located outside of mainland China
 RUN pip install -r requirements.txt
-CMD ["bash","entrypoint.sh"]
 ADD . /FFXIVBOT/
 EXPOSE 8002
 
