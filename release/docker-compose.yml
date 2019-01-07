@@ -18,7 +18,6 @@ services:
     depends_on:
       - db
       - redis
-      - migration
     networks:
       - ffxivbot_network
     ports:
@@ -28,15 +27,6 @@ services:
   redis:
     container_name : ffxivbot-redis
     image: "redis:alpine"
-    networks:
-      - ffxivbot_network
-  migration:
-    container_name : ffxivbot-web-migration
-    image: 'bluefissure/ffxivbot:latest'
-    command: bash -c "python manage.py migrate && python manage.py collectstatic" 
-    restart: on-failure
-    depends_on:
-      - db
     networks:
       - ffxivbot_network
 networks:
