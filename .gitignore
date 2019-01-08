@@ -2,7 +2,6 @@
 .python-version
 *.log
 *.sqlite3
-config.json
 venv/
 __pycache__/
 docker/
