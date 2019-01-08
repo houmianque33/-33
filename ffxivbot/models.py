@@ -83,6 +83,7 @@ class Boss(models.Model):
 	add_time = models.BigIntegerField(default=0)
 	cn_add_time = models.BigIntegerField(default=0)
 	parsed_days = models.IntegerField(default=0)
+	frozen = models.BooleanField(default=False)
 	def __str__(self):
 		return str(self.name)
 

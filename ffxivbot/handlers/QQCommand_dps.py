@@ -95,6 +95,8 @@ def QQCommand_dps(*args, **kwargs):
                 if("国际服" in receive_msg):
                     day = -1
                     receive_msg = receive_msg.replace("国际服","")
+                if boss.frozen:
+                    day = -1
                 atk_res = crawl_dps(boss=boss_obj,job=job_obj,day=day)
                 if type(atk_res)==str:
                     msg = "\nBoss:{}职业:{}第{}日的数据未抓取，请联系管理员抓取\n".format(boss,job,day)

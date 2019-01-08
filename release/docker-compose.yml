@@ -10,6 +10,7 @@ services:
       MYSQL_DATABASE: FFXIV_DEV
     volumes:
       - ./docker/mysql-data:/var/lib/mysql
+      - ./docker/mysql-dump:/mysql-dump
     networks:
       - ffxivbot_network
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
@@ -34,3 +35,4 @@ networks:
   ffxivbot_network:
 volumes:
   mysql-data:
+  mysql-dump:
