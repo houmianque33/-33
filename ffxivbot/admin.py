@@ -68,6 +68,18 @@ class SorryGIFAdmin(admin.ModelAdmin):
 class QQUserAdmin(admin.ModelAdmin):
     list_display = ("user_id", "bot_token")
 
+class HsoAlterNameAdmin(admin.ModelAdmin):
+    list_display = ("name", "key")
+
+class WeatherAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+
+class WeatherRateAdmin(admin.ModelAdmin):
+    list_display = ["id"]
+
+class TerritoryAdmin(admin.ModelAdmin):
+    list_display = ["name"]
+    search_fields = ['name']
 
 admin.site.register(QQGroup,QQGroupAdmin)
 admin.site.register(CustomReply,CustomReplyAdmin)
@@ -87,3 +99,7 @@ admin.site.register(Comment,CommentAdmin)
 admin.site.register(Server,ServerAdmin)
 admin.site.register(SorryGIF,SorryGIFAdmin)
 admin.site.register(QQUser,QQUserAdmin)
+admin.site.register(HsoAlterName,HsoAlterNameAdmin)
+admin.site.register(Weather,WeatherAdmin)
+admin.site.register(WeatherRate,WeatherRateAdmin)
+admin.site.register(Territory,TerritoryAdmin)
