@@ -113,7 +113,7 @@ class WSConsumer(AsyncWebsocketConsumer):
 
                     if(receive["post_type"] == "meta_event" and receive["meta_event_type"] == "heartbeat"):
                         LOGGER.debug("bot:{} Event heartbeat at time:{}".format(self_id, int(time.time())))
-                        await self.call_api(bot, "get_status",{},"get_status:{}".format(self_id))
+                        await self.call_api( "get_status",{},"get_status:{}".format(self_id))
 
                     if (receive["post_type"] == "message"):
                         # LOGGER.info('%s Handling message %s', os.getpid(), receive["message"])
@@ -157,7 +157,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 for (k, v) in handlers.group_commands.items():
                                     msg += "{} : {}\n".format(k,v)
                                 msg = msg.strip()
-                                await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+                                await self.send_message( receive["message_type"], group_id or user_id, msg)
                             else:
                                 if(receive["message"].find('/update_group')==0):
                                     await self.update_group_member_list(bot, group_id)
@@ -182,7 +182,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                                 continue
                                         if not group.registered and command_key!="/group":
                                             msg = "本群%s未在数据库注册，请群主使用/register_group命令注册"%(group_id)
-                                            await self.send_message(bot, "group", group_id, msg)
+                                            await self.send_message( "group", group_id, msg)
                                             break
                                         else:
                                             handle_method = getattr(handlers,"QQGroupCommand_{}".format(command_key.replace("/","",1)))
@@ -197,7 +197,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                                                         alter_commands = handlers.alter_commands,
                                                                         )
                                             for action in action_list:
-                                                await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                                                await self.call_api( action["action"],action["params"],echo=action["echo"])
                                             already_reply = True
                                             break
 
@@ -212,7 +212,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                                                     alter_commands = handlers.alter_commands,
                                                                     )
                                 for action in action_list:
-                                    await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                                    await self.call_api( action["action"],action["params"],echo=action["echo"])
                     
 
 
@@ -226,7 +226,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 msg += "{} : {}\n".format(k,v)
                             msg += "具体介绍详见Wiki使用手册: {}\n".format("https://github.com/Bluefissure/FFXIVBOT/wiki/")
                             msg = msg.strip()
-                            await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+                            await self.send_message( receive["message_type"], group_id or user_id, msg)
 
                         if (receive["message"].find('/ping')==0):
                             msg =  ""
@@ -239,7 +239,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 msg += "[CQ:at,qq={}] {:.2f}s".format(receive["user_id"], time.time()-receive["time"])
                             msg = msg.strip()
                             LOGGER.debug("{} calling command: {}".format(user_id, "/ping"))
-                            await self.send_message(bot, receive["message_type"], group_id or user_id, msg)
+                            await self.send_message( receive["message_type"], group_id or user_id, msg)
 
                         
 
@@ -256,7 +256,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 # if(len(json.loads(bot.disconnections))>100):
                                 #     action_list = self.intercept_action(action_list)
                                 for action in action_list:
-                                    await self.call_api(bot, action["action"],action["params"],echo=action["echo"])
+                                    await self.call_api( action["action"],action["params"],echo=action["echo"])
                                     already_reply = True
                                 break
 
@@ -268,21 +268,21 @@ class WSConsumer(AsyncWebsocketConsumer):
                             flag = receive["flag"]
                             if(bot.auto_accept_friend):
                                 reply_data = {"flag":flag, "approve": True}
-                                await self.call_api(bot, "set_friend_add_request",reply_data)
+                                await self.call_api( "set_friend_add_request",reply_data)
                         if (receive["request_type"] == "group" and receive["sub_type"] == "invite"):    #Invite Group
                             flag = receive["flag"]
                             if(bot.auto_accept_invite):
                                 reply_data = {"flag":flag, "sub_type":"invite", "approve": True}
-                                await self.call_api(bot, "set_group_add_request",reply_data)
+                                await self.call_api( "set_group_add_request",reply_data)
                         if (receive["request_type"] == "group" and receive["sub_type"] == "add" and str(receive["group_id"])==CONFIG_GROUP_ID):    #Add Group
                             flag = receive["flag"]
                             user_id = receive["user_id"]
                             qs = QQBot.objects.filter(owner_id=user_id)
                             if(qs.count()>0):
                                 reply_data = {"flag":flag, "sub_type":"add", "approve": True}
-                                await self.call_api(bot, "set_group_add_request",reply_data)
+                                await self.call_api( "set_group_add_request",reply_data)
                                 reply_data = {"group_id":CONFIG_GROUP_ID, "user_id":user_id, "special_title":"饲养员"}
-                                await self.call_api(bot, "set_group_special_title", reply_data)
+                                await self.call_api( "set_group_special_title", reply_data)
                     if (receive["post_type"] == "event"):
                         if (receive["event"] == "group_increase"):
                             group_id = receive["group_id"]
@@ -292,7 +292,7 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 msg = group.welcome_msg.strip()
                                 if(msg!=""):
                                     msg = "[CQ:at,qq=%s]"%(user_id)+msg
-                                    await self.send_message(bot, "group", group_id, msg)
+                                    await self.send_message("group", group_id, msg)
                             except:
                                 traceback.print_exc()
                     # print(" [x] Received %r" % body)
@@ -300,9 +300,6 @@ class WSConsumer(AsyncWebsocketConsumer):
                     LOGGER.error(e)
                 except:
                     traceback.print_exc()
-
-
-
             except Exception as e:
                 traceback.print_exc() 
             # self.bot.save()
