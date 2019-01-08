@@ -81,5 +81,5 @@ docker exec -t -i ffxivbot-db mysql -uroot -proot
 use FFXIV_DEV;
 source /mysql-dump/FFXIV_DEV.sql;
 ```
-
-导入后，重启docker
+可能由于一些外键的存在，要导入sql文件多次才能导入全部数据。
+导入后，重启docker即可。
