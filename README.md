@@ -1,6 +1,6 @@
 # FFXIVBOT Docker
 
-## 安装Docker
+## 安装Docker —— Linux
 
 ### docker-ce
 
@@ -20,48 +20,66 @@ sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 ```
 
-安装后重新登录（或重启shell），然后有两种方式构建项目：
+安装后重新登录（或重启shell），然后构建项目：
 
-## 1. 自行构建
-
-### 拉取代码
-
-```bash
-git clone -b docker https://github.com/Bluefissure/FFXIVBOT.git && cd FFXIVBOT
-wget https://github.com/almasaeed2010/AdminLTE/archive/v2.4.5.tar.gz && tar zxf v2.4.5.tar.gz && rm v2.4.5.tar.gz
-mv AdminLTE-2.4.5/bower_components static/
-mv AdminLTE-2.4.5/dist static/
-mv AdminLTE-2.4.5/plugins static/
-rm -r AdminLTE-2.4.5/
-```
-
-### 环境创建
-
-```bash
-docker-compose build --no-cache
-```
-
-创建后运行container：
-
-```bash
-docker-compose up
-```
-
-### 数据同步
-
-```bash
-docker-compose run web python manage.py makemigrations
-docker-compose run web python manage.py migrate
-docker-compose run web python manage.py collectstatic
-docker-compose run web python manage.py createsuperuser  #创建管理员
-```
-
-访问IP:8000即可访问网页了
-
-## 2. 使用构建好的镜像
-
+## 下载Compose配置并启动
 ```bash
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/docker-compose.yml
+docker-compose pull
 docker-compose up
 ```
 
+然后服务就启动了，可以通过IP:8000端口访问，如果需要更改端口请更改`docker-compose.yml`文件。
+
+然而，应该会报错，因为数据库还没有初始化。
+
+## 数据库初始化，导入数据
+
+### 数据库初始化
+
+之前的docker不要关，用以下命令进入docker：
+
+```bash
+docker exec -t -i ffxivbot-web /bin/bash
+```
+
+之后依次运行如下代码初始化数据库
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+也可以通过以下代码创建超级管理员：
+
+```bash
+python manage.py createsuperuser
+```
+
+之后Ctrl+D退出docker，并通过IP:8000端口访问即可
+
+### 数据库同步
+
+结构导入了，但是数据库还没有数据，机器人可以通过网页添加，但是诸如/dps一类的功能都需要同步boss的ID之类的数据才能正常使用
+
+首先下载dump的数据：
+
+```bash
+wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/FFXIV_DEV.sql 
+sudo mv FFXIV_DEV.sql docker/mysql-dump
+```
+
+然后我们进入db的docker：
+
+```bash
+docker exec -t -i ffxivbot-db mysql -uroot -proot
+```
+
+然后会出现以`mysql>`开头的命令行选择数据库并导入数据
+
+```mysql
+use FFXIV_DEV;
+source /mysql-dump/FFXIV_DEV.sql;
+```
+
+导入后，重启docker
