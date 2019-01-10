@@ -21,7 +21,7 @@ services:
       - db
       - redis
     environment:
-      QQ_BASE_URL: http://111.231.102.248
+      QQ_BASE_URL: http://111.231.102.248/
       TULING_API_KEY: TULING_API_KEY
     networks:
       - ffxivbot_network
