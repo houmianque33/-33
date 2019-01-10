@@ -148,20 +148,20 @@ class WSConsumer(AsyncWebsocketConsumer):
                                 try:
                                     member_list = json.loads(group.member_list)
                                     if group_created or not member_list:
-                                        await self.update_group_member_list(bot, group_id)
+                                        await self.update_group_member_list(group_id)
                                 except:
                                     member_list = []
                                     
                                 
                                 if (receive["message"].find('/group_help')==0):
-                                    msg =  "" if member_list else "本群成员信息获取失败，请尝试重启酷Q并使用/update_group刷新群成员信息"
+                                    msg =  "" if member_list else "本群成员信息获取失败，请尝试重启酷Q并使用/update_group刷新群成员信息\n"
                                     for (k, v) in handlers.group_commands.items():
                                         msg += "{} : {}\n".format(k,v)
                                     msg = msg.strip()
                                     await self.send_message( receive["message_type"], group_id or user_id, msg)
                                 else:
                                     if(receive["message"].find('/update_group')==0):
-                                        await self.update_group_member_list(bot, group_id)
+                                        await self.update_group_member_list(group_id)
                                     #get sender's user_info
 
                                     user_info = receive["sender"] if "sender" in receive.keys() else None
