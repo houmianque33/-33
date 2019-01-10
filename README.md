@@ -50,7 +50,13 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-也可以通过以下代码创建超级管理员：
+然后输入以下cron避免数据库存储过多的沙雕聊天记录从而爆炸：
+
+```bash
+(crontab -l ; echo "* * * * * bash /FFXIVBOT/utils/cron/clear_garbage.sh >> /var/log/cron.log") | crontab
+```
+
+通过以下代码创建超级管理员：
 
 ```bash
 python manage.py createsuperuser
