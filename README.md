@@ -23,6 +23,7 @@ docker-compose --version
 安装后重新登录（或重启shell），然后构建项目：
 
 ## 下载Compose配置并启动
+
 ```bash
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/docker-compose.yml
 docker-compose pull
@@ -87,5 +88,7 @@ docker exec -t -i ffxivbot-db mysql -uroot -proot
 use FFXIV_DEV;
 source /mysql-dump/FFXIV_DEV.sql;
 ```
+
 可能由于一些外键的存在，要导入sql文件多次才能导入全部数据。
+
 导入后，重启docker即可。
