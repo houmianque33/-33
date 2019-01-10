@@ -135,86 +135,89 @@ class WSConsumer(AsyncWebsocketConsumer):
                         #Group Control Func
                         receive["message"] = receive["message"].replace('\\', '/', 1)
                         if (receive["message_type"]=="group"):
-                            group_id = receive["group_id"]
-                            (group, group_created) = QQGroup.objects.get_or_create(group_id=group_id)
-                            if(int(time.time()) < group.ban_till):
-                                raise Exception("{} banned by group:{}".format(self_id, group_id))
-                                # LOGGER.info("{} banned by group:{}".format(self_id, group_id))
-                                # self.acknowledge_message(basic_deliver.delivery_tag)
-                                # return
-                            group_commands = json.loads(group.commands)
-
                             try:
-                                member_list = json.loads(group.member_list)
-                                if group_created or not member_list:
-                                    await self.update_group_member_list(bot, group_id)
-                            except:
-                                member_list = []
+                                group_id = receive["group_id"]
+                                (group, group_created) = QQGroup.objects.get_or_create(group_id=group_id)
+                                if(int(time.time()) < group.ban_till):
+                                    raise Exception("{} banned by group:{}".format(self_id, group_id))
+                                    # LOGGER.info("{} banned by group:{}".format(self_id, group_id))
+                                    # self.acknowledge_message(basic_deliver.delivery_tag)
+                                    # return
+                                group_commands = json.loads(group.commands)
+
+                                try:
+                                    member_list = json.loads(group.member_list)
+                                    if group_created or not member_list:
+                                        await self.update_group_member_list(bot, group_id)
+                                except:
+                                    member_list = []
+                                    
                                 
-                            
-                            if (receive["message"].find('/group_help')==0):
-                                msg =  "" if member_list else "本群成员信息获取失败，请尝试重启酷Q并使用/update_group刷新群成员信息"
-                                for (k, v) in handlers.group_commands.items():
-                                    msg += "{} : {}\n".format(k,v)
-                                msg = msg.strip()
-                                await self.send_message( receive["message_type"], group_id or user_id, msg)
-                            else:
-                                if(receive["message"].find('/update_group')==0):
-                                    await self.update_group_member_list(bot, group_id)
-                                #get sender's user_info
+                                if (receive["message"].find('/group_help')==0):
+                                    msg =  "" if member_list else "本群成员信息获取失败，请尝试重启酷Q并使用/update_group刷新群成员信息"
+                                    for (k, v) in handlers.group_commands.items():
+                                        msg += "{} : {}\n".format(k,v)
+                                    msg = msg.strip()
+                                    await self.send_message( receive["message_type"], group_id or user_id, msg)
+                                else:
+                                    if(receive["message"].find('/update_group')==0):
+                                        await self.update_group_member_list(bot, group_id)
+                                    #get sender's user_info
 
-                                user_info = receive["sender"] if "sender" in receive.keys() else None
-                                user_info = user_info if user_info and "role" in user_info.keys() else None
-                                if member_list and not user_info:
-                                    for item in member_list:
-                                        if(int(item["user_id"])==int(user_id)):
-                                            user_info = item
-                                            break
-                                if not user_info:
-                                    raise Exception("No user info for user_id:{} in group:{}".format(user_id, group_id))
+                                    user_info = receive["sender"] if "sender" in receive.keys() else None
+                                    user_info = user_info if user_info and "role" in user_info.keys() else None
+                                    if member_list and not user_info:
+                                        for item in member_list:
+                                            if(int(item["user_id"])==int(user_id)):
+                                                user_info = item
+                                                break
+                                    if not user_info:
+                                        raise Exception("No user info for user_id:{} in group:{}".format(user_id, group_id))
+                                    else:
+                                        group_command_keys = sorted(handlers.group_commands.keys())
+                                        group_command_keys.reverse()
+                                        for command_key in group_command_keys:
+                                            if(receive["message"].find(command_key)==0):
+                                                if receive["message_type"]=="group" and group_commands:
+                                                    if command_key in group_commands.keys() and group_commands[command_key]=="disable":
+                                                        continue
+                                                if not group.registered and command_key!="/group":
+                                                    msg = "本群%s未在数据库注册，请群主使用/register_group命令注册"%(group_id)
+                                                    await self.send_message( "group", group_id, msg)
+                                                    break
+                                                else:
+                                                    handle_method = getattr(handlers,"QQGroupCommand_{}".format(command_key.replace("/","",1)))
+                                                    action_list = handle_method(receive = receive, 
+                                                                                global_config = config, 
+                                                                                bot = bot, 
+                                                                                user_info = user_info, 
+                                                                                member_list = member_list, 
+                                                                                group = group,
+                                                                                commands = handlers.commands,
+                                                                                group_commands = handlers.group_commands,
+                                                                                alter_commands = handlers.alter_commands,
+                                                                                )
+                                                    for action in action_list:
+                                                        await self.call_api( action["action"],action["params"],echo=action["echo"])
+                                                    already_reply = True
+                                                    break
 
-                                group_command_keys = sorted(handlers.group_commands.keys())
-                                group_command_keys.reverse()
-                                for command_key in group_command_keys:
-                                    if(receive["message"].find(command_key)==0):
-                                        if receive["message_type"]=="group" and group_commands:
-                                            if command_key in group_commands.keys() and group_commands[command_key]=="disable":
-                                                continue
-                                        if not group.registered and command_key!="/group":
-                                            msg = "本群%s未在数据库注册，请群主使用/register_group命令注册"%(group_id)
-                                            await self.send_message( "group", group_id, msg)
-                                            break
-                                        else:
-                                            handle_method = getattr(handlers,"QQGroupCommand_{}".format(command_key.replace("/","",1)))
-                                            action_list = handle_method(receive = receive, 
+                                if not already_reply:
+                                    action_list = handlers.QQGroupChat(receive = receive, 
                                                                         global_config = config, 
                                                                         bot = bot, 
                                                                         user_info = user_info, 
                                                                         member_list = member_list, 
                                                                         group = group,
                                                                         commands = handlers.commands,
-                                                                        group_commands = handlers.group_commands,
                                                                         alter_commands = handlers.alter_commands,
                                                                         )
-                                            for action in action_list:
-                                                await self.call_api( action["action"],action["params"],echo=action["echo"])
-                                            already_reply = True
-                                            break
-
-                            if not already_reply:
-                                action_list = handlers.QQGroupChat(receive = receive, 
-                                                                    global_config = config, 
-                                                                    bot = bot, 
-                                                                    user_info = user_info, 
-                                                                    member_list = member_list, 
-                                                                    group = group,
-                                                                    commands = handlers.commands,
-                                                                    alter_commands = handlers.alter_commands,
-                                                                    )
-                                for action in action_list:
-                                    await self.call_api( action["action"],action["params"],echo=action["echo"])
-                    
-
+                                    for action in action_list:
+                                        await self.call_api( action["action"],action["params"],echo=action["echo"])
+                        
+                            except Exception as e:
+                                logging.error("Group message error: {}".format(e))
+                                traceback.print_exc()
 
 
                         
