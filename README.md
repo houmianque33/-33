@@ -1,8 +1,10 @@
 # FFXIVBOT Docker
 
-## 安装Docker —— Linux
+## 安装Docker
 
-### docker-ce
+### Linux
+
+#### docker-ce
 
 ```bash
 curl -sSL https://get.docker.com/ | sh 
@@ -12,7 +14,7 @@ curl -sSL https://get.docker.com/ | sh
 
 如果`container.io`的安装有问题，可以通过先`sudo apt-get remove docker-ce`，再`sudo apt-get remove runc`，再重试上述命令尝试解决
 
-### docker-compose
+#### docker-compose
 
 ```bash
 sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -20,12 +22,32 @@ sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 ```
 
-安装后重新登录（或重启shell），然后构建项目：
+安装后重新登录（或重启shell），然后构建项目。
+
+### Windows
+
+#### docker-ce
+
+https://docs.docker.com/docker-for-windows/
+
+#### docker-compose
+
+https://docs.docker.com/compose/install/
 
 ## 下载Compose配置并启动
 
+***Linux***
+
 ```bash
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/docker-compose.yml
+docker-compose pull
+docker-compose up
+```
+
+***Windows***
+
+```powershell
+wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/docker-compose.yml -OutFile docker-compose.yml
 docker-compose pull
 docker-compose up
 ```
@@ -53,8 +75,16 @@ python manage.py migrate
 
 然后输入以下cron避免数据库存储过多的沙雕聊天记录从而爆炸：
 
+***Linux***
+
 ```bash
 (crontab -l ; echo "* * * * * bash /FFXIVBOT/utils/cron/clear_garbage.sh >> /var/log/cron.log") | crontab
+```
+
+***Windows***
+
+```powershell
+抱歉我没找到Windows上面的定时服务（跑
 ```
 
 通过以下代码创建超级管理员：
@@ -71,9 +101,18 @@ python manage.py createsuperuser
 
 首先下载dump的数据：
 
+***Linux***
+
 ```bash
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/FFXIV_DEV.sql 
 sudo mv FFXIV_DEV.sql docker/mysql-dump
+```
+
+***Windows***
+
+```
+wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/FFXIV_DEV.sql -OutFile FFXIV_DEV.sql
+mv FFXIV_DEV.sql docker/mysql-dump
 ```
 
 然后我们进入db的docker：
