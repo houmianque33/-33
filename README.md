@@ -105,14 +105,14 @@ python manage.py createsuperuser
 
 ```bash
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/FFXIV_DEV.sql 
-sudo mv FFXIV_DEV.sql docker/mysql-dump
+sudo mv FFXIV_DEV.sql docker/mysql-dump/
 ```
 
 ***Windows***
 
 ```
 wget https://raw.githubusercontent.com/Bluefissure/FFXIVBOT/docker/release/FFXIV_DEV.sql -OutFile FFXIV_DEV.sql
-mv FFXIV_DEV.sql docker/mysql-dump
+mv FFXIV_DEV.sql docker\mysql-dump\
 ```
 
 然后我们进入db的docker：
@@ -123,9 +123,18 @@ docker exec -t -i ffxivbot-db mysql -uroot -proot
 
 然后会出现以`mysql>`开头的命令行选择数据库并导入数据
 
+***Linux***
+
 ```mysql
 use FFXIV_DEV;
 source /mysql-dump/FFXIV_DEV.sql;
+```
+
+***Windows***
+
+```mysql
+use FFXIV_DEV;
+source ./mysql-dump/FFXIV_DEV.sql;
 ```
 
 可能由于一些外键的存在，要导入sql文件多次才能导入全部数据。
