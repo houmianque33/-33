@@ -5,7 +5,7 @@ import os
 import codecs
 import urllib
 import base64
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append('/FFXIVBOT/')
 os.environ['DJANGO_SETTINGS_MODULE'] ='FFXIVBOT.settings'
 from FFXIVBOT import settings
 import django
