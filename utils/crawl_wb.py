@@ -50,7 +50,7 @@ def crawl_wb(weibouser):
 		pass
 	return
 
-if __name__=="__main__":
+def crawl():
 	wbus = WeiboUser.objects.all()
 	for wbu in wbus:
 		print("Begin crawling {}".format(wbu.name))
@@ -60,3 +60,13 @@ if __name__=="__main__":
 			print(e)
 		time.sleep(1)
 		print("Crawl {} finish".format(wbu.name))
+
+
+
+if __name__=="__main__":
+	while(True):
+		try:
+			crawl()
+			time.sleep(60)
+		except:
+			pass
