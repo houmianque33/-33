@@ -97,7 +97,7 @@ def QQGroupChat(*args, **kwargs):
                     wbt.save()
                     res_data = get_weibotile_share(wbt)
                     tmp_msg = [{"type":"share","data":res_data}]
-                    if(wbt.crawled_time>=int(time.time())-60*10):
+                    if(wbt.crawled_time>=int(time.time())-group.subscription_trigger_time):
                         action = reply_message_action(receive, tmp_msg)
                         action_list.append(action)
                     break

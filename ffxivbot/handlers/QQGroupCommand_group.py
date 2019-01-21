@@ -28,6 +28,14 @@ def QQGroupCommand_group(*args, **kwargs):
                 msg = "群{}注册成功".format(group_id)
         elif(second_command=="info"):
             msg = "TODO"
+        elif(second_command=="weibo"):
+            interval = second_command_msg.replace(second_command,"",1)
+            if str.isdigit(interval):
+                group.subscription_trigger_time = int(interval)
+            else:
+                group.subscription_trigger_time = 300
+            group.save(update_fields=["subscription_trigger_time"])
+            msg = "微博订阅时间被设定为{}s".format(group.subscription_trigger_time)
         else:
             msg = "错误的命令，二级命令有:\"register\", \"info\""
         reply_action = reply_message_action(receive, msg)

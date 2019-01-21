@@ -81,6 +81,10 @@ class TerritoryAdmin(admin.ModelAdmin):
     list_display = ["name"]
     search_fields = ['name']
 
+class ImageAdmin(admin.ModelAdmin):
+    list_display = ["name","key"]
+    search_fields = ['name','key']
+
 admin.site.register(QQGroup,QQGroupAdmin)
 admin.site.register(CustomReply,CustomReplyAdmin)
 admin.site.register(ChatMessage,ChatMessageAdmin)
@@ -103,3 +107,4 @@ admin.site.register(HsoAlterName,HsoAlterNameAdmin)
 admin.site.register(Weather,WeatherAdmin)
 admin.site.register(WeatherRate,WeatherRateAdmin)
 admin.site.register(Territory,TerritoryAdmin)
+admin.site.register(Image,ImageAdmin)
