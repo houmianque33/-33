@@ -53,6 +53,7 @@ def QQCommand_dps(*args, **kwargs):
         boss_list = Boss.objects.all()
         boss_obj = None
         msg = ""
+        CN_source = False
         for boss in boss_list:
             try:
                 boss_nicknames = json.loads(boss.nickname)["nickname"]
@@ -92,9 +93,20 @@ def QQCommand_dps(*args, **kwargs):
                 msg = "未能定位职业:%s"%(receive_msg)
             else:
                 day = math.ceil((int(time.time())-boss.cn_add_time)/(24*3600))
+                if "CN" in receive_msg:
+                    CN_source = True
+                    receive_msg = receive_msg.replace("CN","",1)
+                    day = math.ceil((int(time.time())-boss.cn_add_time)/(24*3600))
+                    day = max(0, day-1)
                 if("国际服" in receive_msg):
-                    day = -1
-                    receive_msg = receive_msg.replace("国际服","")
+                    receive_msg = receive_msg.replace("国际服","day#-1")
+                if("day#" in receive_msg):
+                    try:
+                        tmp_day = int(receive_msg.split(" ")[0].replace("day#",""))
+                        day = tmp_day
+                        receive_msg = receive_msg.replace("day#{}".format(tmp_day),"",1)
+                    except:
+                        pass
                 if boss.frozen:
                     day = -1
                 atk_res = crawl_dps(boss=boss_obj,job=job_obj,day=day)
@@ -106,7 +118,7 @@ def QQCommand_dps(*args, **kwargs):
                         atk_dict = atk_res
                         print(json.dumps(atk_dict))
                         percentage_list = [10,25,50,75,95,99,100]
-                        msg = "%s %s day#%s:\n"%(boss.cn_name,job.cn_name,day)
+                        msg = "{} {} {}day#{}:\n".format(boss.cn_name,job.cn_name,"国服 " if CN_source else "国际服 ",day)
                         for perc in percentage_list:
                             msg += "%s%% : %.2f\n"%(perc,atk_dict[str(perc)])
                         msg = msg.strip()
@@ -135,6 +147,7 @@ def QQCommand_dps(*args, **kwargs):
                                 else:
                                     #msg = "%s %s %.2f day#%s %.2f%%"%(boss.cn_name,job.cn_name,atk,day,calc_perc)
                                     msg = "%s %s %.2f %.2f%%"%(boss.cn_name,job.cn_name,atk,calc_perc)
+                            msg += "\n计算基于{}day#{}数据".format("国服" if CN_source else "国际服", day)
         msg = msg.strip()
         if msg:
             reply_action = reply_message_action(receive, msg)

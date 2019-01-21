@@ -17,6 +17,9 @@ import re
 from django.db import connection, connections
 django.setup()
 from ffxivbot.models import *
+from channels.layers import get_channel_layer 
+from asgiref.sync import async_to_sync
+from ffxivbot.handlers.QQUtils import *
 
 def progress(percent,width=50):
     if percent >= 100:
@@ -44,6 +47,27 @@ def crawl_wb(weibouser):
 				print("pass {} of {} cuz empty itemid".format(t.itemid, t.owner))
 				continue
 			t.save()
+			try:
+				channel_layer = get_channel_layer()
+				groups = weibouser.subscribed_by.filter(subscription_trigger_time=-1)
+				bots = QQBot.objects.all()
+				for bot in bots:
+					group_id_list = [item["group_id"] for item in json.loads(bot.group_list)]
+					print("group_id_list:{}".format(group_id_list))
+					for group in groups:
+						if int(group.group_id) in group_id_list:
+							msg = get_weibotile_share(t, mode="text")
+							t.pushed_group.add(group)
+							jdata = {
+								"action":"send_group_msg",
+								"params":{"group_id":int(group.group_id),"message":msg},
+								"echo":"",
+							}
+							async_to_sync(channel_layer.send)(bot.api_channel_name, {"type": "send.event","text": json.dumps(jdata),})
+				t.save()
+			except Exception as e:
+				print("Error at pushing crawled weibo: {}".format(e))
+
 			print("crawled {} of {}".format(t.itemid, t.owner))
 	else:
 		print("Error at crawling weibo:{}".format(jdata["ok"]))
@@ -60,7 +84,6 @@ def crawl():
 			print(e)
 		time.sleep(1)
 		print("Crawl {} finish".format(wbu.name))
-
 
 
 if __name__=="__main__":

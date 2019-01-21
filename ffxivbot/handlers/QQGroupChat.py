@@ -7,19 +7,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 import traceback
-def get_weibotile_share(weibotile):
-    content_json = json.loads(weibotile.content)
-    mblog = content_json["mblog"]
-    bs = BeautifulSoup(mblog["text"],"html.parser")
-    res_data = {
-        "url":content_json["scheme"],
-        "title":bs.get_text().replace("\u200b","")[:32],
-        "content":"From {}\'s Weibo".format(weibotile.owner),
-        "image":mblog["user"]["profile_image_url"],
-    }
-    logging.debug("weibo_share")
-    logging.debug(json.dumps(res_data))
-    return res_data
+
 
 def QQGroupChat(*args, **kwargs):
     try:

@@ -30,9 +30,9 @@ def QQGroupCommand_group(*args, **kwargs):
             msg = "TODO"
         elif(second_command=="weibo"):
             interval = second_command_msg.replace(second_command,"",1)
-            if str.isdigit(interval):
+            try:
                 group.subscription_trigger_time = int(interval)
-            else:
+            except:
                 group.subscription_trigger_time = 300
             group.save(update_fields=["subscription_trigger_time"])
             msg = "微博订阅时间被设定为{}s".format(group.subscription_trigger_time)
