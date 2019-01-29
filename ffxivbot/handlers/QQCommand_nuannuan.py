@@ -5,6 +5,7 @@ import logging
 import json
 import random
 import requests
+import requests_cache
 
 def QQCommand_nuannuan(*args, **kwargs):
     try:
@@ -12,7 +13,8 @@ def QQCommand_nuannuan(*args, **kwargs):
         action_list = []
         receive = kwargs["receive"]
         try:
-            r = requests.get(url="http://yotsuyu.yorushika.tk:5000/")
+            with requests_cache.disabled():
+                r = requests.get(url="http://yotsuyu.yorushika.tk:5000/")
             res = json.loads(r.text)
             if res["success"]:
                 msg = res["content"]

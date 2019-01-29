@@ -5,39 +5,13 @@ import logging
 import json
 import random
 import requests
+import requests_cache
 import math
 import re
 import traceback
 
 
-def crawl_dps(boss, job, day=0):
-    try:
-        print("boss:{} job:{} day:{}".format(boss,job,day))
-        fflogs_url = 'https://www.fflogs.com/zone/statistics/table/%s/dps/%s/100/8/1/100/1000/7/0/Global/%s/All/0/normalized/single/0/-1/'%(boss.quest.quest_id,boss.boss_id,job.name)
-        r = requests.get(url=fflogs_url)
-        tot_days = 0
-        percentage_list = [10,25,50,75,95,99,100]
-        atk_res = {}
-        for perc in percentage_list:
-            if perc==100:
-                re_str = 'series'+r'.data.push\([+-]?(0|([1-9]\d*))(\.\d+)?\)'
-            else:
-                re_str = 'series%s'%(perc)+r'.data.push\([+-]?(0|([1-9]\d*))(\.\d+)?\)'
-            ptn = re.compile(re_str)
-            find_res = ptn.findall(r.text)
-            # print("url:{}".format(fflogs_url))
-            # print("find_res:{}".format(json.dumps(find_res)))
-            # print("find_res[day]:{}".format(json.dumps(find_res[day])))
-            atk_res[str(perc)] = find_res[day]
-            ss = atk_res[str(perc)][1]+atk_res[str(perc)][2]
-            if(ss==""):
-                ss = "0"
-            atk = float(ss)
-            atk_res[str(perc)] = atk
-            # tot_days = len(find_res)
-        return atk_res
-    except IndexError as e:
-        return "Error: {}".format(e)
+
 
 
 
@@ -92,12 +66,10 @@ def QQCommand_dps(*args, **kwargs):
             if(not job_obj):
                 msg = "未能定位职业:%s"%(receive_msg)
             else:
-                day = math.ceil((int(time.time())-boss.cn_add_time)/(24*3600))
-                if "CN" in receive_msg:
+                day = math.floor((int(time.time())-boss.cn_add_time)/(24*3600))
+                if "CN" in receive_msg or "国服" in receive_msg:
                     CN_source = True
-                    receive_msg = receive_msg.replace("CN","",1)
-                    day = math.ceil((int(time.time())-boss.cn_add_time)/(24*3600))
-                    day = max(0, day-1)
+                    receive_msg = receive_msg.replace("CN","",1).replace("国服","",1)
                 if("国际服" in receive_msg):
                     receive_msg = receive_msg.replace("国际服","day#-1")
                 if("day#" in receive_msg):
@@ -109,7 +81,7 @@ def QQCommand_dps(*args, **kwargs):
                         pass
                 if boss.frozen:
                     day = -1
-                atk_res = crawl_dps(boss=boss_obj,job=job_obj,day=day)
+                atk_res = crawl_dps(boss=boss_obj,job=job_obj,day=day,CN_source=CN_source)
                 if type(atk_res)==str:
                     msg = "\nBoss:{}职业:{}第{}日的数据未抓取，请联系管理员抓取\n".format(boss,job,day)
                     msg += atk_res

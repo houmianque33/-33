@@ -75,6 +75,14 @@ def QQGroupChat(*args, **kwargs):
                     chat = ChatMessage(group=group,message=receive["message"].strip(),timestamp=time.time())
                     chat.save()
 
+        #fudai
+        if("收到福袋，请使用新版手机QQ查看" in receive["message"] and group.antifukubukuro):
+            print("福袋iiiiiiiiiiiii")
+            action = delete_message_action(receive["message_id"])
+            action_list.append(action)
+
+
+
         #weibo subscription
         wbus = group.subscription.all()
         for wbu in wbus:
