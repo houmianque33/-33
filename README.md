@@ -1,5 +1,7 @@
 # FFXIVBOT Docker
 
+Windows云服务器不支持虚拟化Linux Docker，因此尽早转投Linux阵营8！
+
 ## 安装Docker
 
 ### Linux
@@ -73,12 +75,14 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-然后输入以下cron避免数据库存储过多的沙雕聊天记录从而爆炸：
+***请注意，如果代码更新，需要在`docker-compose pull`之后重新运行以上两条命令。***
+
+然后输入以下cron爬取微博：
 
 ***Linux***
 
 ```bash
-(crontab -l ; echo "* * * * * bash /FFXIVBOT/utils/cron/clear_garbage.sh >> /var/log/cron.log") | crontab
+nohup python /FFXIVBOT/utils/crawl_wb.py >> /var/log/weibo_cron.log &
 ```
 
 ***Windows***
