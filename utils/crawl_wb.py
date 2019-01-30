@@ -5,7 +5,7 @@ import os
 import codecs
 import urllib
 import base64
-sys.path.append('/FFXIVBOT/')
+sys.path.append('/home/ubuntu/FFXIVBOT/')
 os.environ['DJANGO_SETTINGS_MODULE'] ='FFXIVBOT.settings'
 from FFXIVBOT import settings
 import django
@@ -46,17 +46,20 @@ def crawl_wb(weibouser):
 			if(tile["itemid"]==""):
 				print("pass {} of {} cuz empty itemid".format(t.itemid, t.owner))
 				continue
+			channel_layer = get_channel_layer()
+			groups = weibouser.subscribed_by.filter(subscription_trigger_time=-1)
+			# print("ready to push groups:{}".format(groups))
+			bots = QQBot.objects.all()
 			t.save()
 			try:
-				channel_layer = get_channel_layer()
-				groups = weibouser.subscribed_by.filter(subscription_trigger_time=-1)
-				bots = QQBot.objects.all()
 				for bot in bots:
 					group_id_list = [item["group_id"] for item in json.loads(bot.group_list)]
 					print("group_id_list:{}".format(group_id_list))
 					for group in groups:
 						if int(group.group_id) in group_id_list:
 							msg = get_weibotile_share(t, mode="text")
+							# print("Pushing {} to group: {}".format(t, group))
+							# print("msg: {}".format(msg))
 							t.pushed_group.add(group)
 							jdata = {
 								"action":"send_group_msg",
@@ -86,10 +89,6 @@ def crawl():
 		print("Crawl {} finish".format(wbu.name))
 
 
+
 if __name__=="__main__":
-	while(True):
-		try:
-			crawl()
-			time.sleep(60)
-		except:
-			pass
+	crawl()
